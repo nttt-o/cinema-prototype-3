@@ -7,14 +7,35 @@ using System.Text;
 
 namespace cinema_prototype_3
 {
-    internal class Screening
+    internal abstract class Screening
     {
-        public Film film;
-        public Hall hall;
-        public DateTime time;
+        protected Film _film;
+        protected Hall _hall;
+        public Film film
+        {
+            get { return _film; }
+            set { _film = value; }
+        }
+        public Hall hall
+        {
+            get { return _hall; }
+            set { _hall = value; }
+        }
+        protected DateTime _time;
 
-        public List<List<char>> seatsAvailability = new List<List<char>>();
-        public List<List<int>> priceData = new List<List<int>>(); // матрица с ценами на места
+        private List<List<char>> _seatsAvailability = new List<List<char>>();
+        public List<List<char>> seatsAvailability
+        {
+            get { return _seatsAvailability; }
+            set { _seatsAvailability = value; }
+        }
+        private List<List<int>> _priceData = new List<List<int>>(); // матрица с ценами на места
+        public List<List<int>> priceData
+        {
+            get { return _priceData; }
+            set { _priceData = value; }
+        }
+        public abstract void Print();
 
         public void SetInitialAvailability()
         {
@@ -52,7 +73,7 @@ namespace cinema_prototype_3
                         foreach (var strPrice in rawRowPrices)
                         {
                             int intPrice = int.Parse(strPrice);
-                            if (intPrice < 0)
+                            if (intPrice < 0 | intPrice < maxBookingLength)
                             {
                                 AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.[/]\n"));
                                 wrongPrice = true;
@@ -283,5 +304,55 @@ namespace cinema_prototype_3
 
             File.WriteAllText(filename, csv.ToString(), Encoding.GetEncoding(1251));
         }
+    }
+
+    internal class StandartScreening : Screening
+    {
+        public static int maxBookingPeriod { get { return 15; } }
+        public DateTime time
+        {
+            get { return _time; }
+            set { _time = value; }
+        }
+        public string critic_name; // имя приглашенного кинокритика
+
+        public override void Print()
+        {
+            // ДОПИСАТЬ
+        }
+
+    }
+
+    internal class PremiereScreening : Screening
+    {
+        public static int maxBookingPeriod { get { return 60; } }
+
+        public DateTime time { get { return _time; } }
+        
+        private string[] _castMembersPresent;
+        public string[] castMembersPresent { get { return _castMembersPresent; } }
+        
+
+        public override void Print()
+        {
+            // ДОПИСАТЬ
+        }
+
+    }
+
+    internal class PressScreening : Screening
+    {
+        public static int maxBookingPeriod { get { return 40; } }
+        public DateTime time { get { return _time; } }
+
+        private string _criticInvited;
+        public string criticInvited { get { return _criticInvited; } }
+
+
+        public override void Print()
+        {
+            // ДОПИСАТЬ
+        }
+
     }
 }

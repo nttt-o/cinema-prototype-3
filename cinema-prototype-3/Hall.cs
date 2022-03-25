@@ -14,7 +14,6 @@ namespace cinema_prototype_3
         public string name = "";
         public int rowsNum;
         public int seatsInRowNum;
-        public string type = "";
 
         public void SetName()
         {
@@ -43,19 +42,6 @@ namespace cinema_prototype_3
                 else
                     Console.WriteLine("Неверное значение для названия зала. Повторите попытку.");
             }
-        }
-        public void SetType()
-        {
-            Console.WriteLine($"Введите тип зала {name}:");
-            string typeCode = AnsiConsole.Prompt(new TextPrompt<string>("1 - стандартный, 2 - VIP")
-                                                            .AddChoice("1")
-                                                            .AddChoice("2")
-                                                            .InvalidChoiceMessage("[red1]Введен неверный вариант. Пожалуйста, попробуйте еще раз.[/]"));
-            Console.WriteLine();
-            if (typeCode == "1")
-                type = "стандартный";
-            if (typeCode == "2")
-                type = "VIP";
         }
         public bool CanBeEdited()
         {
@@ -128,6 +114,26 @@ namespace cinema_prototype_3
                 csv.AppendLine(hallInfo);
             }
             File.WriteAllText(filename, csv.ToString(), Encoding.GetEncoding(1251));
+        }
+    }
+
+    internal class StandartHall : Hall
+    {
+        public static int minPrice = 200;
+
+    }
+
+    internal class IMAXHall : Hall
+    {
+        public static int minPrice = 450;
+
+        public void GetFreePoster()
+        {
+            Console.WriteLine("Хотите получить бесплатный постер в подарок?");
+            string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                .AddChoice("да")
+                                                .AddChoice("нет")
+                                                .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
         }
     }
 }
