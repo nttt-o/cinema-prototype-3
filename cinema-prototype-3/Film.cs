@@ -1,4 +1,5 @@
 ﻿using cinema_prototype_3;
+using Newtonsoft.Json;
 using Spectre.Console;
 using System.Collections;
 using System.Globalization;
@@ -9,13 +10,10 @@ namespace cinema_prototype_3
 {
     internal class Film
     {
-        public static List<Film> all = new List<Film>();
+        public static List<Film> all { get { return _all; } set { _all = value; } }
+        private static List<Film> _all = new List<Film>();
 
-        public string name = "";
-        public string ageRestriction = "";
-        public List<Hall> halls = new List<Hall>();
-        public List<Screening> screenings = new List<Screening>();
-
+        public string name { get { return _name; } }
         public void SetName()
         {
             bool succeeded = false;
@@ -38,13 +36,16 @@ namespace cinema_prototype_3
 
                 if (inputName.Length >= 1 && !alreadyExists)
                 {
-                    name = inputName;
+                    _name = inputName;
                     succeeded = true;
                 }
                 else
                     Console.WriteLine("Неверное значение для названия фильма. Повторите попытку.");
             }
         }
+        private string _name = "";
+
+        public string ageRestriction { get { return _ageRestriction; } }
         public void SetAgeRestriction()
         {
             Console.WriteLine($"\nВведите возрастное ограничение для фильма {name}:");
@@ -55,8 +56,17 @@ namespace cinema_prototype_3
                                                             .AddChoice("16+")
                                                             .AddChoice("18+")
                                                             .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
-            ageRestriction = ageRest;
+            _ageRestriction = ageRest;
         }
+        private string _ageRestriction = "";
+
+        public List<Hall> halls { get { return _halls; } set { _halls = value; } }
+        private List<Hall> _halls = new List<Hall>();
+
+        public List<Screening> screenings { get { return _screenings; } set { _screenings = value; } }
+        private List<Screening> _screenings = new List<Screening>();
+
+
         public bool CanBeEdited()
         {
             bool canBeEdited = true;
@@ -90,7 +100,7 @@ namespace cinema_prototype_3
 
             for (int i = 0; i < relevantScreenings.Count; i++)
             {
-                Console.WriteLine($"{i + 1,3}: {relevantScreenings[i].hall.name,10} {relevantScreenings[i].hall.type} | {relevantScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"{i + 1,3}: {relevantScreenings[i].hall.name,10} {relevantScreenings[i].hall.GetType()} | {relevantScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
                 scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
             }
 
@@ -127,47 +137,36 @@ namespace cinema_prototype_3
             }
             return new Film(); // dummyFilm
         }
-        public void ProcessData(string line)
-        {
-            string[] parts = line.Split(',');  //Разделитель в CSV файле.
-            name = parts[0];
-            ageRestriction = parts[1];
-            foreach (string hallname in parts[2].Split(';'))
-            {
-                foreach (Hall hall in Hall.all)
-                {
-                    if (hall.name == hallname)
-                    {
-                        halls.Add(hall);
-                        break;
-                    }
-                }
-            }
-        }
+
         public static void ReadFile(string filename)
         {
-            var encoding = Encoding.GetEncoding(1251);
-            using (StreamReader sr = new StreamReader(filename, encoding: encoding))
+            using (var sr = new StreamReader(filename))
             {
-                string line;
-                while ((line = sr.ReadLine()) != null)
+                using (var jsonReader = new JsonTextReader(sr))
                 {
-                    Film film = new Film();
-                    film.ProcessData(line);
-                    all.Add(film);
+                    var serializer = new JsonSerializer()
+                    { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+                    Film.all = serializer.Deserialize<List<Film>>(jsonReader);
                 }
             }
+
         }
         public static void UpdateFile(string filename)
         {
-            var csv = new StringBuilder();
-            foreach (Film film in Film.all)
+            using (var sw = new StreamWriter(filename))
             {
-                string hallnames = String.Join(';', film.halls.Select(hall => hall.name).ToList());
-                string filmInfo = $"{film.name},{film.ageRestriction},{hallnames}";
-                csv.AppendLine(filmInfo);
+                using (var jsonWriter = new JsonTextWriter(sw))
+                {
+                    jsonWriter.Formatting = Formatting.Indented;
+
+                    var serializer = new JsonSerializer()
+                    { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+                    serializer.Serialize(jsonWriter, Film.all);
+                }
             }
-            File.WriteAllText(filename, csv.ToString(), Encoding.GetEncoding(1251));
         }
+
     }
 }

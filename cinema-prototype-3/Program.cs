@@ -1,11 +1,14 @@
 ﻿using cinema_prototype_3;
+using Newtonsoft.Json;
 using Spectre.Console;
 using System.Collections;
 using System.Globalization;
 using System.Text;
+using System.Reflection;
 
 internal class Program
 {
+
     public static void Main(string[] args)
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -147,6 +150,75 @@ internal class Program
                 Console.WriteLine("Неверное значение. Повторите попытку.");
         }
     }
+
+    public static void ReadHallData(string standart, string luxe, string black)
+    {
+        using (var sr = new StreamReader(standart))
+        {
+            using (var jsonReader = new JsonTextReader(sr))
+            {
+                var serializer = new JsonSerializer()
+                { TypeNameHandling = TypeNameHandling.Auto };
+
+                StandartHall.all = serializer.Deserialize<List<StandartHall>>(jsonReader);
+            }
+        }
+
+        using (var sr = new StreamReader(luxe))
+        {
+            using (var jsonReader = new JsonTextReader(sr))
+            {
+                var serializer = new JsonSerializer()
+                { TypeNameHandling = TypeNameHandling.Auto };
+
+                LuxeHall.all = serializer.Deserialize<List<LuxeHall>>(jsonReader);
+            }
+        }
+
+        using (var sr = new StreamReader(black))
+        {
+            using (var jsonReader = new JsonTextReader(sr))
+            {
+                var serializer = new JsonSerializer()
+                { TypeNameHandling = TypeNameHandling.Auto };
+
+                BlackHall.all = serializer.Deserialize<List<BlackHall>>(jsonReader);
+            }
+        }
+    }
+    public static void WriteHallData(string standart, string luxe, string black)
+    {
+        using (var sw = new StreamWriter(standart))
+        {
+            using (var jsonWriter = new JsonTextWriter(sw))
+            {
+                jsonWriter.Formatting = Formatting.Indented;
+                var serializer = new JsonSerializer() {TypeNameHandling = TypeNameHandling.Auto };
+                serializer.Serialize(jsonWriter, StandartHall.all);
+            }
+        }
+
+        using (var sw = new StreamWriter(luxe))
+        {
+            using (var jsonWriter = new JsonTextWriter(sw))
+            {
+                jsonWriter.Formatting = Formatting.Indented;
+                var serializer = new JsonSerializer() { TypeNameHandling = TypeNameHandling.Auto };
+                serializer.Serialize(jsonWriter, LuxeHall.all);
+            }
+        }
+
+        using (var sw = new StreamWriter(black))
+        {
+            using (var jsonWriter = new JsonTextWriter(sw))
+            {
+                jsonWriter.Formatting = Formatting.Indented;
+                var serializer = new JsonSerializer() { TypeNameHandling = TypeNameHandling.Auto };
+                serializer.Serialize(jsonWriter, BlackHall.all);
+            }
+        }
+    }
+    
     public static DateTime GetDateAndTime()
     {
         while (true)
@@ -210,6 +282,4 @@ internal class Program
         int range = (endDT - startDT).Days;
         return DateOnly.FromDateTime(startDT.AddDays(gen.Next(range)));
     }
-
-
 }

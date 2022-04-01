@@ -18,40 +18,106 @@ namespace cinema_prototype_3
             newFilm.SetName();
             newFilm.SetAgeRestriction();
             Film.all.Add(newFilm);
-        }
+        } // все ок
         public static void AddNewHall()
         {
-            Hall newHall;
-            newHall = new Hall();
-            newHall.SetName();
-            Console.WriteLine("Введите число рядов в зале:");
-            int rows = Program.GetPositiveInt(); newHall.rowsNum = rows;
-            Console.WriteLine("Введите число мест в одном ряду:");
-            int seats = Program.GetPositiveInt(); newHall.seatsInRowNum = seats;
-            newHall.SetType();
-            Hall.all.Add(newHall);
-        }
+            Console.WriteLine("Ознакомьтесь с типами залов.\n");
+            StandartHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+            LuxeHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+            BlackHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+
+            Console.WriteLine($"Выберите тип зала: 1 - {new StandartHall().GetHallType()}, 2 - {new LuxeHall().GetHallType()}, 3 - {new BlackHall().GetHallType()}");
+            string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                        .AddChoice("1")
+                                        .AddChoice("2")
+                                        .AddChoice("3")
+                                        .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+            if (answer == "1")
+            {
+                StandartHall newHall = new StandartHall();
+                newHall.SetInitialHallData();
+            }
+            if (answer == "2")
+            {
+                LuxeHall newHall = new LuxeHall();
+                newHall.SetInitialHallData();
+            }
+            if (answer == "3")
+            {
+                BlackHall newHall = new BlackHall();
+                newHall.SetInitialHallData();
+            }
+
+
+        } // все ок
         public static void AddNewScreening(Film currFilm)
         {
-            if (Hall.all.Count == 0)
+            
+            
+            if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
             {
                 Console.WriteLine("Ошибка: в базе нет ни одного зала.");
                 return;
             }
 
+            Console.WriteLine("Ознакомьтесь с типами сеансов.\n");
+            StandartScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+            PremiereScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+            PressScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+
+            Console.WriteLine($"Выберите тип показа: 1 - {StandartScreening.type} , 2 - {PremiereScreening.type}, 3 - {PressScreening.type}");
+            string screeningTypeChosen = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                        .AddChoice("1")
+                                        .AddChoice("2")
+                                        .AddChoice("3")
+                                        .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+            Console.WriteLine("Ознакомьтесь с типами залов для показа.\n");
+            StandartHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+            LuxeHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+            BlackHall.PrintHallTypeCharacteristics(); Console.WriteLine();
+
+            TextPrompt<string> hallChoicePrompt = new TextPrompt<string>("");
+
+            if (StandartHall.all.Count == 0)
+                Console.WriteLine($"Залов типа 1 - {new StandartHall().GetHallType()} в базе нет.");
+            else
+                hallChoicePrompt.AddChoice("1");
+
+            if (LuxeHall.all.Count == 0)
+                Console.WriteLine($"Залов типа 2 - {new LuxeHall().GetHallType()} в базе нет.");
+            else
+                hallChoicePrompt.AddChoice("2");
+
+            if (BlackHall.all.Count == 0)
+                Console.WriteLine($"Залов типа 3 - {new BlackHall().GetHallType()} в базе нет.");
+            else
+                hallChoicePrompt.AddChoice("3");
+
+            Console.WriteLine($"Выберите тип зала для показа: 1 - {new StandartHall().GetHallType()}, 2 - {new LuxeHall().GetHallType()}, 3 - {new BlackHall().GetHallType()}");
+            string hallTypeChosen = AnsiConsole.Prompt(hallChoicePrompt.InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+
             Console.WriteLine($"\nВыберите зал для показа фильма {currFilm.name}");
 
             bool validChoice = false;
-            Hall chosenHall = new Hall();
+            Hall chosenHall = null;
 
             while (!validChoice)
             {
-                Hall currHall = Hall.ChooseHall();
+                Hall currHall;
+                if (hallTypeChosen == "1")
+                    currHall = StandartHall.ChooseHall();
+                else if (hallTypeChosen == "2")
+                    currHall = LuxeHall.ChooseHall();
+                else
+                    currHall = BlackHall.ChooseHall();
 
                 bool isOkayToChoose = true;
                 foreach (Film film in Film.all)
                 {
-                    foreach (Hall hall in film.halls)
+                    foreach (var hall in film.halls)
                     {
                         if (hall.name == currHall.name && film.name != currFilm.name)
                         {
@@ -70,15 +136,16 @@ namespace cinema_prototype_3
                 {
                     Console.WriteLine("Выберите другой зал, этот уже зарезервирован для другого фильма.");
                     AnsiConsole.Write(new Markup("Хотите продолжить выбор зала?\n"));
-                    string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
+                    string choice = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                 .AddChoice("да")
                                                 .AddChoice("нет")
                                                 .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
                     Console.WriteLine();
-                    if (answer == "нет")
+                    if (choice == "нет")
                         return;
                 }
             }
+            
             currFilm.halls.Add(chosenHall);
 
             Console.WriteLine($"\nВыберите время для показа фильма {currFilm.name} в зале {chosenHall.name}.");
@@ -86,19 +153,35 @@ namespace cinema_prototype_3
             DateTime showDate = Program.GetDateAndTime();
             foreach (Screening screening in currFilm.screenings)
             {
-                if (screening.hall == chosenHall && screening.time == showDate)
+                if (screening.hall.name == chosenHall.name && screening.time == showDate)
                 {
                     Console.WriteLine("Данный сеанс уже есть в базе. В добавлении отказано.");
                     return;
                 }
             }
-            Screening newScreening = new Screening { film = currFilm, hall = chosenHall, time = showDate };
+
+            Screening newScreening = null;
+            if (screeningTypeChosen == "1")
+            {
+                StandartScreening scr = new StandartScreening { film = currFilm, hall = chosenHall, time = showDate };
+                newScreening = scr;
+            }
+            if (screeningTypeChosen == "2")
+            {
+                PremiereScreening scr = new PremiereScreening { film = currFilm, hall = chosenHall, time = showDate };
+                newScreening = scr;
+            }
+            if (screeningTypeChosen == "3")
+            {
+                PressScreening scr = new PressScreening { film = currFilm, hall = chosenHall, time = showDate };
+                newScreening = scr;
+            }
             newScreening.SetInitialAvailability();
             newScreening.SetInitialPrices();
             currFilm.screenings.Add(newScreening);
             return;
-        }
-        public bool Check_Password() // проверка пароля для входа в интерфейс администратора
+        } // все ок 
+        public bool Check_Password() 
         {
             bool isAllowed = false;
             bool isReturnNeeded = false;
@@ -119,7 +202,7 @@ namespace cinema_prototype_3
             } while (!isAllowed);
 
             return isReturnNeeded;
-        }
+        } // все ок
         public static void EditCinemaData()
         {
             while (true)
