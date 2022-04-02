@@ -1,4 +1,5 @@
 ﻿using cinema_prototype_3;
+using Newtonsoft.Json;
 using Spectre.Console;
 using System.Collections;
 using System.Globalization;
@@ -18,6 +19,7 @@ namespace cinema_prototype_3
         public DateTime time { get; set; }
         protected DateTime _time;
 
+        public virtual int maxBookingPeriod { get { return 0; } }
         public static string type { get { return _type; } }
         private static string _type = "";
 
@@ -43,9 +45,22 @@ namespace cinema_prototype_3
             }
         }
         public void SetInitialPrices()
-        {
-            Console.WriteLine($"\nВ зале {hall.rowsNum} рядов по {hall.seatsInRowNum} мест.");
-            Console.WriteLine("Введите стоимость билетов на сеанс через пробел:");
+        {;
+            Console.WriteLine("\nНапоминаем информацию о текущем зале.\n");
+            hall.PrintCurrentHallInfoForAdministrator();
+
+            Console.WriteLine("\nХотите установить цены на билеты по умолчанию (минимальная цена, указанная выше)?");
+            string choice = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                .AddChoice("да")
+                                                .AddChoice("нет")
+                                                .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+            if (choice == "да")
+            {
+                AutoPrices(hall.minPrice);
+                return;
+            }
+
+            Console.WriteLine("\nВведите стоимость билетов на сеанс через пробел:");
 
             for (int i = 0; i < hall.rowsNum; i++)
             {
@@ -60,7 +75,7 @@ namespace cinema_prototype_3
                     {
                         if (rawRowPrices.Length != hall.seatsInRowNum)
                         {
-                            AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.[/]\n"));
+                            AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.\n"));
                             continue;
                         }
 
@@ -68,9 +83,9 @@ namespace cinema_prototype_3
                         foreach (var strPrice in rawRowPrices)
                         {
                             int intPrice = int.Parse(strPrice);
-                            if (intPrice < 0 | intPrice < maxBookingLength)
+                            if (intPrice < 0 | intPrice < hall.minPrice)
                             {
-                                AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.[/]\n"));
+                                AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.\n"));
                                 wrongPrice = true;
                                 break;
                             }
@@ -84,7 +99,7 @@ namespace cinema_prototype_3
                     }
                     catch (Exception)
                     {
-                        AnsiConsole.Write(new Markup("[red1]Неверные значения для цен. Повторите попытку.[/]\n"));
+                        AnsiConsole.Write(new Markup("Неверные значения для цен. Повторите попытку.\n"));
                     }
                 } while (arePricesValid == false);
 
@@ -191,7 +206,7 @@ namespace cinema_prototype_3
                         try
                         {
                             int newPrice = int.Parse(strPrice);
-                            if (newPrice >= 0)
+                            if (newPrice >= 0 && newPrice >= hall.minPrice)
                             {
                                 priceData[row][seat] = newPrice;
                                 return false;
@@ -199,6 +214,7 @@ namespace cinema_prototype_3
                             else
                             {
                                 AnsiConsole.Write(new Markup("Неверное значение для цены.Повторите ввод.\n"));
+                                Console.WriteLine($"Напоминание: минимальная цена на билет в зале {hall.name} типа {hall.GetHallType()}: {hall.minPrice}");
                                 continue;
                             }
                         }
@@ -232,6 +248,16 @@ namespace cinema_prototype_3
             }
             return canBeEdited;
         }
+        public void AutoPrices(int price)
+        {
+            for (int i = 0; i < hall.rowsNum; i++)
+            {
+                List<int> row = new List<int>();
+                for (int j = 0; j < hall.seatsInRowNum; j++)
+                    row.Add(price);
+                _priceData.Add(row);
+            }
+        }
 
     }
 
@@ -239,14 +265,17 @@ namespace cinema_prototype_3
     {
         public static string type { get { return _type; } }
         private static string _type = "Стандартный показ";
-        private static int _maxBookingPeriod { get { return 14; } }
+
+        public override int maxBookingPeriod { get { return _maxBookingPeriod; } }
+        private static int _maxBookingPeriod = 14;
+           
 
         public override void Print(int num)
         {
             if (num < 0)
-                Console.WriteLine($"{type,16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"{type,16} | {hall.name,10} {hall.GetHallType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
             else
-                Console.WriteLine($"{num + 1,3}: {type,16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"{num + 1,3}: {type,18} | {hall.name,12} | {hall.GetHallType(), 9} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
         }
 
         public static void PrintScreeningTypeCharacteristics()
@@ -255,17 +284,33 @@ namespace cinema_prototype_3
             Console.WriteLine($"Предельное время, за которое можно забронировать билет на фильм: {_maxBookingPeriod}.");
             Console.WriteLine("Дополнительные характеристики отсутствуют.");
         }
-
     }
 
     internal class PremiereScreening : Screening
     {
         public static string type { get { return _type; } }
         private static string _type = "Премьерный показ";
-        private static int _maxBookingPeriod { get { return 45; } }
+        public override int maxBookingPeriod { get { return _maxBookingPeriod; } }
+        private static int _maxBookingPeriod = 45;
 
-        public string criticInvited { get { return _criticInvited; } }
+        public string criticInvited { get { return _criticInvited; } set { _criticInvited = value; } }
         private string _criticInvited;
+        public void SetCriticInvited()
+        {
+            Console.WriteLine("Введите имя приглашенного кинокритика.");
+            while (true)
+            {
+                string inputName = AnsiConsole.Prompt(new TextPrompt<string>("> "));
+                if(!inputName.ToCharArray().Any(c => char.IsLetter(c)))
+                {
+                    Console.WriteLine("Некорректный ввод. Повторите попытку. Имя должно содержать хотя бы одну букву.");
+                    continue;
+                }
+                _criticInvited = inputName;
+                break;
+
+            }
+        }
 
         public static void PrintScreeningTypeCharacteristics()
         {
@@ -274,9 +319,9 @@ namespace cinema_prototype_3
             Console.WriteLine("Обязательно приглашение кинокритика.");
         }
 
-        public bool GetFreePoster()
+        public static bool GetFreePoster()
         {
-            Console.WriteLine($"Хотите получить один бесплатный постер к фильму {_film} в подарок?");
+            Console.WriteLine($"Хотите получить один бесплатный постер к фильму в подарок?");
             string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                 .AddChoice("да")
                                                 .AddChoice("нет")
@@ -290,64 +335,40 @@ namespace cinema_prototype_3
         {
             if (num < 0)
             {
-                Console.WriteLine($"{type,16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
-                Console.WriteLine($"    Приглашенный кинокритик: {criticInvited,25}");
+                Console.WriteLine($"{type,16} | {hall.name,10} {hall.GetHallType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"                Приглашенный кинокритик: {criticInvited}");
             }
             else
             {
-                Console.WriteLine($"{num + 1,3}: {type, 16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
-                Console.WriteLine($"    Приглашенный кинокритик: {criticInvited,25}");
+                Console.WriteLine($"{num + 1,3}: {type,18} | {hall.name,12} | {hall.GetHallType(), 9} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"{"", 23}   Приглашенный кинокритик: {criticInvited}");
             }
         }
-            
-        public static void ReadFile(string filename)
-            {
-                var encoding = Encoding.GetEncoding(1251);
-                using (StreamReader sr = new StreamReader(filename, encoding: encoding))
-                {
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
-                    {
-                        Screening screening = new Screening();
-                        screening.ProcessData(line);
-                        screening.film.screenings.Add(screening);
-                    }
-                }
-            } // ДОПИСАТЬ
-        public static void UpdateFile(string filename)
-            {
-                var csv = new StringBuilder();
-
-                foreach (Film film in Film.all)
-                {
-                    foreach (Screening screening in film.screenings)
-                    {
-                        List<string> priceList = new List<string>();
-                        for (int i = 0; i < screening.hall.rowsNum; i++)
-                        {
-                            string row = String.Join('%', screening.priceData[i]);
-                            priceList.Add(row);
-                        }
-                        string priceString = String.Join(';', priceList);
-
-                        string screeningInfo = $"{screening.film.name},{screening.hall.name},{screening.time},{priceString}";
-                        csv.AppendLine(screeningInfo);
-                    }
-                }
-
-                File.WriteAllText(filename, csv.ToString(), Encoding.GetEncoding(1251));
-            } // ДОПИСАТЬ
-
-        }
+    }
 
     internal class PressScreening : Screening
     {
         public static string type { get { return _type; } }
         private static string _type = "Пресс-показ";
-        private static int _maxBookingPeriod { get { return 60; } }
+        public override int maxBookingPeriod { get { return _maxBookingPeriod; } }
+        private static int _maxBookingPeriod = 60;
 
-        public string[] castMembersPresent { get { return _castMembersPresent; } }
+        public string[] castMembersPresent { get { return _castMembersPresent; } set { _castMembersPresent = value; } }
         private string[] _castMembersPresent;
+        public void SetCastMembersPresent()
+        {
+            while (true)
+            {
+                string[] inputNames = AnsiConsole.Prompt(new TextPrompt<string>("> ")).Split(", ");
+                if (!inputNames.All(name => name.ToCharArray().Any(c => char.IsLetter(c))))
+                {
+                    Console.WriteLine("Некорректный ввод. Повторите попытку. Имена должны содержать хотя бы одну букву.");
+                    continue;
+                }
+                _castMembersPresent = inputNames;
+                break;
+            }
+        }
 
         public static void PrintScreeningTypeCharacteristics()
         {
@@ -356,7 +377,7 @@ namespace cinema_prototype_3
             Console.WriteLine("Обязательно приглашение актеров, участвовавших в съемках.");
         }
 
-        public bool GetFreePoster()
+        public static bool GetFreePoster()
         {
             Console.WriteLine("Хотите получить один бесплатный постер к фильму в подарок?");
             string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
@@ -368,7 +389,7 @@ namespace cinema_prototype_3
             
             return false;
         }
-        public bool GetCastAuthographs()
+        public static bool GetCastAuthographs()
         {
             Console.WriteLine("Хотите получить автографы актеров в подарок?");
             string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
@@ -385,83 +406,15 @@ namespace cinema_prototype_3
         {
             if (num < 0)
             {
-                Console.WriteLine($"{type,16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
-                Console.WriteLine($"    Присутствующие актеры: {string.Join(", ", castMembersPresent)}");
+                Console.WriteLine($"{type,16} | {hall.name,10} | {hall.GetHallType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"                Присутствующие актеры: {string.Join(", ", castMembersPresent)}");
             }
             else
             {
-                Console.WriteLine($"{num + 1,3}: {type,16} {hall.name,10} {hall.GetType()} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
-                Console.WriteLine($"    Присутствующие актеры: {string.Join(", ", castMembersPresent)}");
+                Console.WriteLine($"{num + 1,3}: {type,18} | {hall.name,12} | {hall.GetHallType(), 9} | {time.ToString("dd/MM/yyyy HH:mm"),16}");
+                Console.WriteLine($"{"",23}   Присутствующие актеры: {string.Join(", ", castMembersPresent)}");
             }
         }
-
-        public override void ProcessData(string line)
-        {
-            string[] parts = line.Split(',');  //Разделитель в CSV файле.
-
-            string filmname = parts[0];
-            foreach (Film existingFilm in Film.all)
-            {
-                if (filmname == existingFilm.name)
-                {
-                    film = existingFilm;
-                    break;
-                }
-            }
-
-            string hallname = parts[1];
-            foreach (var existingHall in Hall.all)
-            {
-                if (hallname == existingHall.name)
-                {
-                    hall = existingHall;
-                    break;
-                }
-            }
-
-            time = DateTime.Parse(parts[2]);
-            var pricesByRows = parts[3].Split(';');
-            for (int i = 0; i < hall.rowsNum; i++)
-                priceData.Add(pricesByRows[i].Split('%').Select(int.Parse).ToList());
-
-        } // ДОПИСАТЬ
-        public static void ReadFile(string filename)
-        {
-            var encoding = Encoding.GetEncoding(1251);
-            using (StreamReader sr = new StreamReader(filename, encoding: encoding))
-            {
-                string line;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    Screening screening = new Screening();
-                    screening.ProcessData(line);
-                    screening.film.screenings.Add(screening);
-                }
-            }
-        } // ДОПИСАТЬ
-        public static void UpdateFile(string filename)
-        {
-            var csv = new StringBuilder();
-
-            foreach (Film film in Film.all)
-            {
-                foreach (Screening screening in film.screenings)
-                {
-                    List<string> priceList = new List<string>();
-                    for (int i = 0; i < screening.hall.rowsNum; i++)
-                    {
-                        string row = String.Join('%', screening.priceData[i]);
-                        priceList.Add(row);
-                    }
-                    string priceString = String.Join(';', priceList);
-
-                    string screeningInfo = $"{screening.film.name},{screening.hall.name},{screening.time},{priceString}";
-                    csv.AppendLine(screeningInfo);
-                }
-            }
-
-            File.WriteAllText(filename, csv.ToString(), Encoding.GetEncoding(1251));
-        } // ДОПИСАТЬ
         
     }
 }

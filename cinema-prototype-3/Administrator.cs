@@ -51,29 +51,10 @@ namespace cinema_prototype_3
 
 
         } // все ок
-        public static void AddNewScreening(Film currFilm)
+
+        public static string ChooseHallType()
         {
-            
-            
-            if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
-            {
-                Console.WriteLine("Ошибка: в базе нет ни одного зала.");
-                return;
-            }
-
-            Console.WriteLine("Ознакомьтесь с типами сеансов.\n");
-            StandartScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
-            PremiereScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
-            PressScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
-
-            Console.WriteLine($"Выберите тип показа: 1 - {StandartScreening.type} , 2 - {PremiereScreening.type}, 3 - {PressScreening.type}");
-            string screeningTypeChosen = AnsiConsole.Prompt(new TextPrompt<string>("")
-                                        .AddChoice("1")
-                                        .AddChoice("2")
-                                        .AddChoice("3")
-                                        .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
-
-            Console.WriteLine("Ознакомьтесь с типами залов для показа.\n");
+            Console.WriteLine("\nОзнакомьтесь с типами залов.\n");
             StandartHall.PrintHallTypeCharacteristics(); Console.WriteLine();
             LuxeHall.PrintHallTypeCharacteristics(); Console.WriteLine();
             BlackHall.PrintHallTypeCharacteristics(); Console.WriteLine();
@@ -95,12 +76,36 @@ namespace cinema_prototype_3
             else
                 hallChoicePrompt.AddChoice("3");
 
-            Console.WriteLine($"Выберите тип зала для показа: 1 - {new StandartHall().GetHallType()}, 2 - {new LuxeHall().GetHallType()}, 3 - {new BlackHall().GetHallType()}");
+            Console.WriteLine($"Выберите тип зала: 1 - {new StandartHall().GetHallType()}, 2 - {new LuxeHall().GetHallType()}, 3 - {new BlackHall().GetHallType()}");
             string hallTypeChosen = AnsiConsole.Prompt(hallChoicePrompt.InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
 
+            return hallTypeChosen;
+
+        }
+
+        public static void AddNewScreening(Film currFilm)
+        {            
+            if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
+            {
+                Console.WriteLine("Ошибка: в базе нет ни одного зала.");
+                return;
+            }
+
+            Console.WriteLine("Ознакомьтесь с типами сеансов.\n");
+            StandartScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+            PremiereScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+            PressScreening.PrintScreeningTypeCharacteristics(); Console.WriteLine();
+
+            Console.WriteLine($"Выберите тип показа: 1 - {StandartScreening.type} , 2 - {PremiereScreening.type}, 3 - {PressScreening.type}");
+            string screeningTypeChosen = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                        .AddChoice("1")
+                                        .AddChoice("2")
+                                        .AddChoice("3")
+                                        .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+            string hallTypeChosen = ChooseHallType();
 
             Console.WriteLine($"\nВыберите зал для показа фильма {currFilm.name}");
-
             bool validChoice = false;
             Hall chosenHall = null;
 
@@ -169,11 +174,15 @@ namespace cinema_prototype_3
             if (screeningTypeChosen == "2")
             {
                 PremiereScreening scr = new PremiereScreening { film = currFilm, hall = chosenHall, time = showDate };
+                Console.WriteLine();
+                scr.SetCriticInvited();
                 newScreening = scr;
             }
             if (screeningTypeChosen == "3")
             {
                 PressScreening scr = new PressScreening { film = currFilm, hall = chosenHall, time = showDate };
+                Console.WriteLine();
+                scr.SetCastMembersPresent();
                 newScreening = scr;
             }
             newScreening.SetInitialAvailability();
@@ -185,7 +194,7 @@ namespace cinema_prototype_3
         {
             bool isAllowed = false;
             bool isReturnNeeded = false;
-            AnsiConsole.Write(new Markup("\nВведите пароль. Чтобы вернуться к меню выбора интерфейса, введите 'и'\n"));
+            AnsiConsole.Write(new Markup("\nВведите пароль (12345). Чтобы вернуться к меню выбора интерфейса, введите 'и'\n"));
 
             do
             {
@@ -235,7 +244,7 @@ namespace cinema_prototype_3
                             }
 
                             Console.WriteLine("Выберите фильм.");
-                            Film filmAddScreeningFor = Film.ChooseFilm("screening count not important");
+                            Film filmAddScreeningFor = Film.ChooseFilm("screening count not important").Item1;
                             AddNewScreening(filmAddScreeningFor);
                         }
 
@@ -262,6 +271,7 @@ namespace cinema_prototype_3
                         Console.WriteLine("1 - изменить информацию о фильме;\n2 - изменить информацию о зале;\n3 - изменить информацию о сеансе;\n4 - выйти из режима изменения данных и вернуться к меню.");
                         string editCommand = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3").AddChoice("4")
                                                                         .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+                        
                         if (editCommand == "1")
                         {
                             if (Film.all.Count == 0)
@@ -270,7 +280,15 @@ namespace cinema_prototype_3
                                 continue;
                             }
 
-                            Film filmToEdit = Film.ChooseFilm("screening count not important");
+                            Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count not important");
+                            int foundCode = choiceResult.Item2;
+                            if (foundCode == -1)
+                            {
+                                Console.WriteLine("Изменение данных невозможно.\n");
+                                continue;
+                            }
+
+                            Film filmToEdit = choiceResult.Item1;
                             bool canBeEdited = filmToEdit.CanBeEdited();
                             if (!canBeEdited)
                             {
@@ -294,27 +312,47 @@ namespace cinema_prototype_3
                         } // изменить информацию о фильме
                         if (editCommand == "2")
                         {
-                            if (Hall.all.Count == 0)
+                            if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
                             {
                                 Console.WriteLine("В базе нет залов. Изменить данные о конкретном зале невозможно.");
                                 continue;
                             }
 
-                            Hall chosenHall = Hall.ChooseHall();
-                            bool canBeEdited = chosenHall.CanBeEdited();
-                            if (!canBeEdited)
-                            {
-                                Console.WriteLine("На сеансы в этом зале уже были куплены билеты. В изменении данных отказано.");
-                                continue;
-                            }
+                            string hallTypeChosen = ChooseHallType();
 
-                            Console.WriteLine("\nВыберите действие.\n1 - изменить название;\n2 - изменить тип;\n");
-                            string action = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2")
-                                                                            .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
-                            if (action == "1")
-                                chosenHall.SetName();
-                            if (action == "2")
-                                chosenHall.SetType();
+                            if (hallTypeChosen == "1")
+                            {
+                                if (StandartHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                StandartHall chosenHall = StandartHall.ChooseHall();
+                                chosenHall.EditData();
+                            }
+                            else if (hallTypeChosen == "2")
+                            {
+                                if (LuxeHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                LuxeHall chosenHall = LuxeHall.ChooseHall();
+                                chosenHall.EditData();
+                            }
+                            else
+                            {
+                                if (BlackHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                BlackHall chosenHall = BlackHall.ChooseHall();
+                                chosenHall.EditData();
+                            }
 
                         } // изменить информацию о зале
                         if (editCommand == "3")
@@ -330,10 +368,14 @@ namespace cinema_prototype_3
                             }
 
                             Console.WriteLine("\nВыберите фильм.");
-                            Film chosenFilm = Film.ChooseFilm("screening count important");
-                            Screening chosenScreening = chosenFilm.ChooseScreening();
-
-
+                            Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count important");
+                            int foundCode = choiceResult.Item2;
+                            if (foundCode == -1)
+                            {
+                                Console.WriteLine("Изменение данных невозможно.\n");
+                                continue;
+                            }
+                            Screening chosenScreening = choiceResult.Item1.ChooseScreening("administrator");
 
                             Console.WriteLine("\nВыберите действие.\n1 - пометить места как занятые (не учитываются для аналитики, в отличие от купленных пользователями);\n2 - изменить цены;\n3 - изменить время");
                             string action = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3")
@@ -375,7 +417,7 @@ namespace cinema_prototype_3
                                 chosenScreening.time = Program.GetDateAndTime();
                             }
 
-                        } // изменить информацию о сеансе
+                        } // изменить информацию о сеансе - все ок
                         if (editCommand == "4")
                             break;
 
@@ -409,7 +451,15 @@ namespace cinema_prototype_3
                                 continue;
                             }
 
-                            Film filmToDelete = Film.ChooseFilm("screening count not important");
+                            Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count not important");
+                            int foundCode = choiceResult.Item2;
+                            if (foundCode == -1)
+                            {
+                                Console.WriteLine("Удаление данных невозможно.\n");
+                                continue;
+                            }
+                            Film filmToDelete = choiceResult.Item1;
+
                             bool canBeDeleted = filmToDelete.CanBeEdited();
                             if (!canBeDeleted)
                             {
@@ -419,27 +469,80 @@ namespace cinema_prototype_3
 
                             Film.all.Remove(filmToDelete);
 
-                        } // удалить фильм
+                        } // удалить фильм - все ок
 
                         if (deleteCommand == "2")
                         {
-                            if (Hall.all.Count == 0)
+                            if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
                             {
-                                Console.WriteLine("В базе и так нет залов.");
+                                Console.WriteLine("В базе нет залов. Удалить данные о конкретном зале невозможно.");
                                 continue;
                             }
 
-                            Hall chosenHall = Hall.ChooseHall();
-                            bool canBeDeleted = chosenHall.CanBeEdited();
-                            if (!canBeDeleted)
+                            string hallTypeChosen = ChooseHallType();
+
+                            if (hallTypeChosen == "1")
                             {
-                                Console.WriteLine("На сеансы в этом зале уже были куплены билеты. В удалении отказано.");
-                                continue;
+                                if (StandartHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                StandartHall chosenHall = StandartHall.ChooseHall();
+                                bool canBeDeleted = chosenHall.CanBeEdited();
+                                if (!canBeDeleted)
+                                {
+                                    Console.WriteLine("На сеансы в этом зале уже были куплены билеты. В удалении отказано.");
+                                    continue;
+                                }
+
+                                StandartHall.all.Remove(chosenHall);
+                                foreach (Film film in Film.all)
+                                    film.screenings.RemoveAll(scr => scr.hall.name == chosenHall.name);
+                            }
+                            else if (hallTypeChosen == "2")
+                            {
+                                if (LuxeHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                LuxeHall chosenHall = LuxeHall.ChooseHall();
+                                bool canBeDeleted = chosenHall.CanBeEdited();
+                                if (!canBeDeleted)
+                                {
+                                    Console.WriteLine("На сеансы в этом зале уже были куплены билеты. В удалении отказано.");
+                                    continue;
+                                }
+
+                                LuxeHall.all.Remove(chosenHall);
+                                foreach (Film film in Film.all)
+                                    film.screenings.RemoveAll(scr => scr.hall.name == chosenHall.name);
+                            }
+                            else
+                            {
+                                if (BlackHall.all.Count == 0)
+                                {
+                                    Console.WriteLine("В базе нет залов данного типа.");
+                                    continue;
+                                }
+
+                                BlackHall chosenHall = BlackHall.ChooseHall();
+                                bool canBeDeleted = chosenHall.CanBeEdited();
+                                if (!canBeDeleted)
+                                {
+                                    Console.WriteLine("На сеансы в этом зале уже были куплены билеты. В удалении отказано.");
+                                    continue;
+                                }
+
+                                BlackHall.all.Remove(chosenHall);
+                                foreach (Film film in Film.all)
+                                    film.screenings.RemoveAll(scr => scr.hall.name == chosenHall.name);
                             }
 
-                            Hall.all.Remove(chosenHall);
-
-                        } //удалить зал
+                        } //удалить зал - все ок
 
                         if (deleteCommand == "3")
                         {
@@ -454,8 +557,16 @@ namespace cinema_prototype_3
                             }
 
                             Console.WriteLine("\nВыберите фильм");
-                            Film chosenFilm = Film.ChooseFilm("screening count important");
-                            Screening chosenScreening = chosenFilm.ChooseScreening();
+                            Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count important");
+                            int foundCode = choiceResult.Item2;
+                            if (foundCode == -1)
+                            {
+                                Console.WriteLine("Удаление данных невозможно.\n");
+                                continue;
+                            }
+
+                            Film chosenFilm = choiceResult.Item1;
+                            Screening chosenScreening = chosenFilm.ChooseScreening("administrator");
 
                             bool canBeDeleted = chosenScreening.CanTimeBeEdited();
                             if (!canBeDeleted)
@@ -466,7 +577,7 @@ namespace cinema_prototype_3
 
                             chosenFilm.screenings.Remove(chosenScreening);
 
-                        } // удалить сеанс
+                        } // удалить сеанс - все ок
 
                         if (deleteCommand == "4")
                             break;
@@ -484,7 +595,7 @@ namespace cinema_prototype_3
                 else if (command == "4")
                     return;
             }
-        }
+        } // все ок
         public static void GetClientAnalytics()
         {
             while (true)
@@ -523,7 +634,7 @@ namespace cinema_prototype_3
                 else if (command == "4")
                     return;
             }
-        }
+        } 
         public static void GetSalesStatistics()
         {
             while (true)
@@ -565,49 +676,81 @@ namespace cinema_prototype_3
                     }
 
                     Console.WriteLine("\nВыберите фильм");
-                    Film filmChosen = Film.ChooseFilm("screening count not important");
+                    Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count not important");
+                    int foundCode = choiceResult.Item2;
+                    if (foundCode == -1)
+                    {
+                        Console.WriteLine("Изменение данных невозможно.\n");
+                        continue;
+                    }
+                    Film filmChosen = choiceResult.Item1;
                     allTickets = allTickets.Where(ticket => ticket.screening.film.name == filmChosen.name).ToList();
                 }
 
                 if (filters.Any(filter => filter == "Конкретный зал"))
                 {
-                    if (Hall.all.Count == 0)
-                    {
+                    if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
                         Console.WriteLine("В базе нет ни одного зала для выбора");
-                        continue;
-                    }
+                    else
+                    {
+                        Console.WriteLine("Выберите зал.");
+                        string hallTypeChosen = ChooseHallType();
+                        Hall chosenHall = null;
 
-                    Console.WriteLine("\nВыберите зал.");
-                    Hall hallChosen = Hall.ChooseHall();
-                    allTickets = allTickets.Where(ticket => ticket.screening.hall.name == hallChosen.name).ToList();
+                        if (hallTypeChosen == "1")
+                        {
+                            if (StandartHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = StandartHall.ChooseHall();
+                        }
+                        else if (hallTypeChosen == "2")
+                        {
+                            if (LuxeHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = LuxeHall.ChooseHall();
+                        }
+                        else
+                        {
+                            if (BlackHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = BlackHall.ChooseHall();
+                        }
+
+                        if (chosenHall is not null)
+                            allTickets = allTickets.Where(ticket => ticket.screening.hall.name == chosenHall.name).ToList();
+                    }
                 }
 
                 if (filters.Any(filter => filter == "Конкретный сеанс"))
                 {
-                    List<Screening> allScreenings = new List<Screening>();
+                    List<Screening> screeningsToChooseFrom = new List<Screening>();
                     foreach (Film film in Film.all)
-                        allScreenings.AddRange(film.screenings);
-                    allScreenings.Sort((x, y) => x.time.CompareTo(y.time));
+                        screeningsToChooseFrom.AddRange(film.screenings);
+                    screeningsToChooseFrom.Sort((x, y) => x.time.CompareTo(y.time));
 
-                    if (allScreenings.Count == 0)
+                    if (screeningsToChooseFrom.Count == 0)
                     {
                         Console.WriteLine("В базе нет ни одного сеанса для выбора");
-                        continue;
                     }
-
-                    TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
-
-                    for (int i = 0; i < allScreenings.Count; i++)
+                    else
                     {
-                        Console.WriteLine($"{i + 1,4}: {allScreenings[i].film.name,20} {allScreenings[i].hall.name,10} {allScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
-                        scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
+                        Console.WriteLine("\nВведите номер одного выбранного сеанса:");
+                        TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
+
+                        for (int i = 0; i < screeningsToChooseFrom.Count; i++)
+                        {
+                            screeningsToChooseFrom[i].Print(i);
+                            scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
+                        }
+
+                        int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
+                        Screening screeningChosen = screeningsToChooseFrom[scrNum];
+
+                        allTickets = allTickets.Where(ticket => ticket.screening.film.name == screeningChosen.film.name && ticket.screening.hall.name == screeningChosen.hall.name && ticket.screening.time == screeningChosen.time).ToList();
                     }
-
-                    Console.WriteLine("\nВведите номер одного выбранного сеанса:");
-                    int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
-                    Screening screeningChosen = allScreenings[scrNum];
-
-                    allTickets = allTickets.Where(ticket => ticket.screening.film.name == screeningChosen.film.name && ticket.screening.hall.name == screeningChosen.hall.name && ticket.screening.time == screeningChosen.time).ToList();
                 }
 
                 if (filters.Any(filter => filter == "Конкретный промежуток времени (дни)"))
@@ -675,7 +818,7 @@ namespace cinema_prototype_3
                 Console.WriteLine($"\nВыручка составляет {revenue} рублей.");
 
             }
-        }
+        } 
         public static void TrackHallLoad()
         {
             while (true)
@@ -710,28 +853,61 @@ namespace cinema_prototype_3
 
                 if (filters.Any(filter => filter == "Конкретный фильм"))
                 {
+                    Console.WriteLine("\nВыберите фильм.");
                     if (Film.all.Count == 0)
                     {
-                        Console.WriteLine("\nВыберите фильм");
-                        Console.WriteLine("В базе нет ни одного фильма для выбора");
+                        Console.WriteLine("В базе нет ни одного фильма для выбора.");
                         continue;
                     }
 
-                    Film filmChosen = Film.ChooseFilm("screening count not important");
-                    allScreenings = allScreenings.Where(screening => screening.film.name == filmChosen.name).ToList();
+                    Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count not important");
+                    int foundCode = choiceResult.Item2;
+                    if (foundCode == -1)
+                        Console.WriteLine("Выбор невозможен.\n");
+                    else
+                    {
+                        Film filmChosen = choiceResult.Item1;
+                        allScreenings = allScreenings.Where(screening => screening.film.name == filmChosen.name).ToList();
+                    }
+                    
                 }
 
                 if (filters.Any(filter => filter == "Конкретный зал"))
                 {
-                    if (Hall.all.Count == 0)
-                    {
+                    Console.WriteLine("Выберите зал.");
+                    if (StandartHall.all.Count + LuxeHall.all.Count + BlackHall.all.Count == 0)
                         Console.WriteLine("В базе нет ни одного зала для выбора");
-                        continue;
-                    }
+                    else
+                    {
+                        string hallTypeChosen = ChooseHallType();
+                        Hall chosenHall = null;
 
-                    Console.WriteLine("\nВыберите зал.");
-                    Hall hallChosen = Hall.ChooseHall();
-                    allScreenings = allScreenings.Where(screening => screening.hall.name == hallChosen.name).ToList();
+                        if (hallTypeChosen == "1")
+                        {
+                            if (StandartHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = StandartHall.ChooseHall();
+                        }
+                        else if (hallTypeChosen == "2")
+                        {
+                            if (LuxeHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = LuxeHall.ChooseHall();
+                        }
+                        else
+                        {
+                            if (BlackHall.all.Count == 0)
+                                Console.WriteLine("В базе нет залов данного типа.");
+                            else
+                                chosenHall = BlackHall.ChooseHall();
+                        }
+                        
+                        if (chosenHall is not null)
+                            allScreenings = allScreenings.Where(screening => screening.hall.name == chosenHall.name).ToList();
+                    }
+                    
                 }
 
                 if (filters.Any(filter => filter == "Конкретный сеанс"))
@@ -744,22 +920,24 @@ namespace cinema_prototype_3
                     if (screeningsToChooseFrom.Count == 0)
                     {
                         Console.WriteLine("В базе нет ни одного сеанса для выбора");
-                        continue;
                     }
-
-                    TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
-
-                    for (int i = 0; i < screeningsToChooseFrom.Count; i++)
+                    else
                     {
-                        Console.WriteLine($"{i + 1,4}: {screeningsToChooseFrom[i].film.name,20} {screeningsToChooseFrom[i].hall.name,10} {screeningsToChooseFrom[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
-                        scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
+                        TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
+
+                        for (int i = 0; i < screeningsToChooseFrom.Count; i++)
+                        {
+                            screeningsToChooseFrom[i].Print(i);
+                            scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
+                        }
+
+                        Console.WriteLine("\nВведите номер одного выбранного сеанса:");
+                        int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
+                        Screening screeningChosen = screeningsToChooseFrom[scrNum];
+
+                        allScreenings = allScreenings.Where(screening => screening.film.name == screeningChosen.film.name && screening.hall.name == screeningChosen.hall.name && screening.time == screeningChosen.time).ToList();
                     }
-
-                    Console.WriteLine("\nВведите номер одного выбранного сеанса:");
-                    int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
-                    Screening screeningChosen = screeningsToChooseFrom[scrNum];
-
-                    allScreenings = allScreenings.Where(screening => screening.film.name == screeningChosen.film.name && screening.hall.name == screeningChosen.hall.name && screening.time == screeningChosen.time).ToList();
+                   
                 }
 
                 if (filters.Any(filter => filter == "Конкретный промежуток времени (дни)"))

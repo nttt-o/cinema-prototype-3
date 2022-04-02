@@ -45,14 +45,21 @@ internal class Program
             else if (command == "3")
             {
                 Console.WriteLine("Завершаю работу...");
-                string hallFilename = @"halls.csv";
-                Hall.UpdateFile(hallFilename);
 
-                string filmFilename = @"films.csv";
+                string userFilename = @"users.json";
+                User.UpdateFile(userFilename);
+
+                string standarthallFilename = @"standarthalls.json";
+                string luxehallFilename = @"luxehalls.json";
+                string blackhallFilename = @"blackhalls.json";
+
+                StandartHall.UpdateFile(standarthallFilename);
+                LuxeHall.UpdateFile(luxehallFilename);
+                BlackHall.UpdateFile(blackhallFilename);
+
+                string filmFilename = @"films.json";
                 Film.UpdateFile(filmFilename);
 
-                string screeningFilename = @"screenings.csv";
-                Screening.UpdateFile(screeningFilename);
                 break;
             }
         }
@@ -61,31 +68,209 @@ internal class Program
 
     static void StartAdministratorInterface()
     {
-        string hallFilename = @"C:halls.csv";
-        Hall.ReadFile(hallFilename);
+        //List<StandartHall> stHalls = new List<StandartHall>();
 
-        string filmFilename = @"C:films.csv";
+        //StandartHall s1 = new StandartHall { name = "standart one" };
+        //StandartHall s2 = new StandartHall { name = "standart two" };
+
+        //stHalls.Add(s1);
+        //stHalls.Add(s2);
+
+        //List<LuxeHall> luHalls = new List<LuxeHall>();
+
+        //LuxeHall l1 = new LuxeHall { name = "luxe one" };
+        //LuxeHall l2 = new LuxeHall { name = "luxe two" };
+
+        //luHalls.Add(l1);
+        //luHalls.Add(l2);
+
+        //List<BlackHall> blHalls = new List<BlackHall>();
+        //BlackHall b1 = new BlackHall { name = "black one" };
+        //blHalls.Add(b1);
+
+
+        //List<Film> films = new List<Film>();
+        //Film f1 = new Film { name = "Вверх", ageRestriction = "6+", halls = new List<Hall> { s1 }, screenings = new List<Screening>() };
+        //Film f2 = new Film { name = "Вниз", ageRestriction = "0+", halls = new List<Hall> { l1 }, screenings = new List<Screening>() };
+        //Film f3 = new Film { name = "Один дома", ageRestriction = "12+", halls = new List<Hall> { l2 }, screenings = new List<Screening>() };
+        //Film f4 = new Film { name = "Искупление", ageRestriction = "18+", halls = new List<Hall> { b1 }, screenings = new List<Screening>() };
+
+        //StandartScreening st1 = new StandartScreening { film = f1, hall = s1, time = DateTime.Parse("11.04.2022 17:30:00") };
+        //st1.SetInitialAvailability();
+        //st1.AutoPrices(s1.minPrice);
+        //f1.screenings.Add(st1);
+
+        //PremiereScreening premScr = new PremiereScreening { film = f2, hall = l1, time = DateTime.Parse("01.05.2022 17:30:00"), criticInvited = "Наталия Осина" };
+        //premScr.AutoPrices(l1.minPrice);
+        //premScr.SetInitialAvailability();
+        //f2.screenings.Add(premScr);
+
+        //PressScreening pressScr = new PressScreening { film = f3, hall = l2, time = DateTime.Parse("01.08.2022 17:30:00"), castMembersPresent = new string[] { "Маколей Калкин", "Дэниел Стерн" } };
+        //pressScr.AutoPrices(l2.minPrice);
+        //pressScr.SetInitialAvailability();
+        //f3.screenings.Add(pressScr);
+
+        //StandartScreening st2 = new StandartScreening { film = f4, hall = b1, time = DateTime.Parse("01.06.2022 17:30:00") };
+        //st2.AutoPrices(b1.minPrice);
+        //st2.SetInitialAvailability();
+        //f4.screenings.Add(st2);
+
+        //films.Add(f1);
+        //films.Add(f2);
+        //films.Add(f3);
+        //films.Add(f4);
+
+        //List<User> users = new List<User>();
+        //string userpath = @"users.json";
+
+        //using (var sw = new StreamWriter(userpath))
+        //{
+        //    using (var jsonWriter = new JsonTextWriter(sw))
+        //    {
+        //        jsonWriter.Formatting = Formatting.Indented;
+
+        //        var serializer = new JsonSerializer()
+        //        { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+        //        serializer.Serialize(jsonWriter, users);
+        //    }
+        //}
+
+        //string standart = @"standarthalls.json";
+        //string luxe = @"luxehalls.json";
+        //string black = @"blackhalls.json";
+
+        //using (var sw = new StreamWriter(standart))
+        //{
+        //    using (var jsonWriter = new JsonTextWriter(sw))
+        //    {
+        //        jsonWriter.Formatting = Formatting.Indented;
+
+        //        var serializer = new JsonSerializer()
+        //        { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+        //        serializer.Serialize(jsonWriter, stHalls);
+        //    }
+        //}
+
+        //using (var sw = new StreamWriter(luxe))
+        //{
+        //    using (var jsonWriter = new JsonTextWriter(sw))
+        //    {
+        //        jsonWriter.Formatting = Formatting.Indented;
+
+        //        var serializer = new JsonSerializer()
+        //        { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+        //        serializer.Serialize(jsonWriter, luHalls);
+        //    }
+        //}
+
+        //using (var sw = new StreamWriter(black))
+        //{
+        //    using (var jsonWriter = new JsonTextWriter(sw))
+        //    {
+        //        jsonWriter.Formatting = Formatting.Indented;
+
+        //        var serializer = new JsonSerializer()
+        //        { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+        //        serializer.Serialize(jsonWriter, blHalls);
+        //    }
+        //}
+
+        //string filmpath = @"films.json";
+
+        //using (var sw = new StreamWriter(filmpath))
+        //{
+        //    using (var jsonWriter = new JsonTextWriter(sw))
+        //    {
+        //        jsonWriter.Formatting = Formatting.Indented;
+
+        //        var serializer = new JsonSerializer()
+        //        { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+        //        serializer.Serialize(jsonWriter, films);
+        //    }
+        //}
+
+
+        string userFilename = @"users.json";
+        User.ReadFile(userFilename);
+
+        string standarthallFilename = @"standarthalls.json";
+        string luxehallFilename = @"luxehalls.json";
+        string blackhallFilename = @"blackhalls.json";
+
+        StandartHall.ReadFile(standarthallFilename);
+        LuxeHall.ReadFile(luxehallFilename);
+        BlackHall.ReadFile(blackhallFilename);
+
+        string filmFilename = @"C:films.json";
         Film.ReadFile(filmFilename);
-
-        string screeningFilename = @"screenings.csv";
-        Screening.ReadFile(screeningFilename);
-        foreach (Film film in Film.all)
-        {
-            foreach (Screening screening in film.screenings)
-                screening.SetInitialAvailability();
-        }
-
     }
     static void UserInterface()
     {
+        Console.WriteLine("\nВыберите опцию.");
+        Console.WriteLine("1 - войти в личный кабинет пользователя;");
+        Console.WriteLine("2 - зарегистрироваться;");
 
         User currUser = new User();
-        User.all.Add(currUser);
-        currUser.SetUsername();
+        string option = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                            .AddChoice("1")
+                                                            .AddChoice("2")
+                                                            .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+        if (option == "1")
+        {
+            string answer = "да";
+            do
+            {
+                string name = AnsiConsole.Prompt(new TextPrompt<string>("\nВведите имя пользователя: "));
+                string pwd = AnsiConsole.Prompt(new TextPrompt<string>("Введите пароль: ").Secret());
 
-        Console.WriteLine("Введите начальный баланс.");
-        int initBalance = GetPositiveInt();
-        currUser.balance = initBalance;
+                bool foundUser = false;
+                if (User.all is not null)
+                {
+                    foreach (User user in User.all)
+                    {
+                        if (user.username == name && user.password == pwd)
+                        {
+                            currUser = user;
+                            foundUser = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (foundUser == true)
+                {
+                    Console.WriteLine($"\nВаш баланс составляет {currUser.balance}. Вы сможете пополнить его при покупке билетов.");
+                    break;
+                }
+
+                Console.WriteLine("\nИмя пользователя и/или пароль неверны. Повторите попытку.");
+
+
+                answer = AnsiConsole.Prompt(new TextPrompt<string>("Хотите продолжить?")
+                                                    .AddChoice("да")
+                                                    .AddChoice("нет")
+                                                    .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+                if (answer == "нет")
+                    return;
+
+            } while (answer == "да");
+        }
+        
+        if (option == "2")
+        {
+            currUser.SetUsername();
+            currUser.SetPassword();
+            User.all.Add(currUser);
+            Console.WriteLine("\nВведите баланс.");
+            int initBalance = GetPositiveInt();
+            currUser.SetBalance(initBalance);
+        }
 
         while (true)
         {
@@ -224,6 +409,7 @@ internal class Program
         while (true)
         {
             Console.WriteLine("Введите дату в формате ДД.ММ.ГГГГ ЧЧ:ММ");
+            Console.Write("> ");
             string dateString = Console.ReadLine();
             string format = "dd.MM.yyyy HH:mm";
             try

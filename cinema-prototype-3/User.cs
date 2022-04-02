@@ -1,4 +1,5 @@
 ﻿using cinema_prototype_3;
+using Newtonsoft.Json;
 using Spectre.Console;
 using System.Collections;
 using System.Globalization;
@@ -8,11 +9,27 @@ namespace cinema_prototype_3
 {
     internal class User
     {
-        public static List<User> all = new List<User>();
+        public static List<User> all { get { return _all; } set { _all = value; } }
+        private static List<User> _all = new List<User>();
 
-        public int balance;
-        public string username;
-        public List<Ticket> orders = new List<Ticket>();
+        public int balance { get { return _balance; } set { _balance = value; } }
+        private int _balance;
+
+        public string username { get { return _username; } set { _username = value; } }
+        private string _username;
+
+        public string password { get { return _password; } set { _password = value; } }
+        private string _password;
+
+        public void SetPassword()
+        {
+            string pwd = AnsiConsole.Prompt(new TextPrompt<string>("Введите пароль: "));
+            _password = pwd;
+            Console.WriteLine($"Пароль '{pwd}' установлен.");
+        }
+
+        public  List<Ticket> orders { get { return _orders; } set { _orders = value; } }
+        private List<Ticket> _orders = new List<Ticket>();
 
         public void SetUsername()
         {
@@ -22,7 +39,7 @@ namespace cinema_prototype_3
             {
                 Console.Write("> ");
                 string input = Console.ReadLine();
-                if (input.Length >= 1)
+                if (input.Length >= 1 && input != " ")
                 {
                     bool alreadyTaken = false;
                     foreach (User existingUser in User.all)
@@ -39,7 +56,7 @@ namespace cinema_prototype_3
 
                     else
                     {
-                        username = input;
+                        _username = input;
                         success = true;
                     }
                 }
@@ -47,11 +64,15 @@ namespace cinema_prototype_3
                     Console.WriteLine("Повторите ввод.");
             }
         }
+        public void SetBalance(int moneySum)
+        {
+            _balance = moneySum;
+        }
         public void UpdateBalance()
         {
             Console.WriteLine("Введите сумму, на которую хотите пополнить баланс.");
             int toAdd = Program.GetPositiveInt();
-            balance = balance + toAdd;
+            _balance = _balance + toAdd;
             Console.WriteLine("Пополнение прошло успешно!");
         }
         public Dictionary<Screening, List<List<int>>> ReadOneScreeningOrder(List<Ticket> alreadyReserved)
@@ -60,10 +81,23 @@ namespace cinema_prototype_3
             string answer = "да";
 
             Console.WriteLine("\nВыберите фильм.");
-            Film chosenFilm = Film.ChooseFilm("choose screening after");
+            Tuple<Film, int> choiceResult = Film.ChooseFilm("screening count important");
+            int foundCode = choiceResult.Item2;
+            if (foundCode == -1)
+            {
+                Console.WriteLine("Изменение данных невозможно.\n");
+                return currOrder;
+            }
+            Film chosenFilm = choiceResult.Item1;
             Console.WriteLine();
 
-            Screening chosenScreening = chosenFilm.ChooseScreening();
+            Screening chosenScreening = chosenFilm.ChooseScreening("user");
+
+            if (chosenScreening == null)
+            {
+                return currOrder;
+            }
+            chosenScreening.hall.PrintHallInfoForCustomer();
             AnsiConsole.Write(new Markup("\nДоступные места [green](0 - место доступно;[/] [red] x - место выкуплено)[/]\n"));
             chosenScreening.PrintHallData("availability");
             AnsiConsole.Write(new Markup("Цены на билеты\n"));
@@ -117,6 +151,7 @@ namespace cinema_prototype_3
                             currOrder[chosenScreening].Add(ticket);
                         else
                             currOrder.Add(chosenScreening, new List<List<int>> { ticket });
+
                     }
                     else
                         AnsiConsole.Write(new Markup("К сожалению, данное место уже куплено.\n"));
@@ -173,15 +208,58 @@ namespace cinema_prototype_3
             do
             {
                 Dictionary<Screening, List<List<int>>> ticketsToReserve = ReadOneScreeningOrder(reservedTickets);
-                foreach (KeyValuePair<Screening, List<List<int>>> kvp in ticketsToReserve)
-                {
-                    foreach (List<int> seatsData in kvp.Value)
-                    {
-                        Ticket currTicket = new Ticket(username, kvp.Key, seatsData);
-                        reservedTickets.Add(currTicket);
-                    }
-                } // добавили в бронирование
 
+                if (ticketsToReserve.Count != 0)
+                {
+                    foreach (KeyValuePair<Screening, List<List<int>>> kvp in ticketsToReserve)
+                    {
+                        foreach (List<int> seatsData in kvp.Value)
+                        {
+                            Ticket currTicket = new Ticket(username, kvp.Key, seatsData);
+
+                            foreach (LuxeHall hall in LuxeHall.all)
+                            {
+                                if (hall.name == kvp.Key.hall.name)
+                                {
+                                    Console.WriteLine($"\nУточните пожелания по покупке билета на фильм {kvp.Key.film.name} в зале {hall.name} типа {hall.GetHallType()}.\n");
+                                    currTicket.foodOrdered = hall.OrderFood();
+                                    currTicket.drinksOrdered = hall.OrderBeverages();
+                                }
+                            }
+
+                            foreach (BlackHall hall in BlackHall.all)
+                            {
+                                if (hall.name == kvp.Key.hall.name)
+                                {
+                                    Console.WriteLine($"\nУточните пожелания по покупке билета на фильм {kvp.Key.film.name} в зале {hall.name} типа {hall.GetHallType()}.\n");
+                                    
+                                    currTicket.foodOrdered = hall.OrderFood();
+                                    currTicket.drinksOrdered = hall.OrderBeverages();
+
+                                    currTicket.pillowsNeeded = BlackHall.AddPillows();
+                                    currTicket.blanketsNeeded = BlackHall.AddBlanket();
+                                }
+                            }
+
+
+                            if (kvp.Key is PremiereScreening)
+                            {
+                                Console.WriteLine($"\nУточните детали получения подарков при покупке билета на премьерный показ фильма {kvp.Key.film.name}.\n");
+                                currTicket.posterNeeded = PremiereScreening.GetFreePoster();
+
+                            }
+                            if (kvp.Key is PressScreening)
+                            {
+                                Console.WriteLine($"\nУточните детали получения подарков при покупке билета на пресс-показ фильма {kvp.Key.film.name}.\n");
+                                currTicket.posterNeeded = PressScreening.GetFreePoster();
+                                currTicket.authographsNeeded = PressScreening.GetCastAuthographs();
+                            }
+
+                            reservedTickets.Add(currTicket);
+                        }
+                    } // добавили в бронирование
+                }
+                
                 AnsiConsole.Write(new Markup("\nХотите выбрать другие фильмы или сеансы?\n"));
                 answer = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                     .AddChoice("да")
@@ -191,7 +269,7 @@ namespace cinema_prototype_3
 
             if (reservedTickets.Count == 0)
             {
-                Console.WriteLine("Сожалеем, что вы не приобрели ни одного билета. Пожалуйста, приходите к нам ещё!\n");
+                Console.WriteLine("\nСожалеем, что вы не приобрели ни одного билета. Пожалуйста, приходите к нам ещё!\n");
                 return;
             }
 
@@ -227,7 +305,7 @@ namespace cinema_prototype_3
             foreach (Ticket ticket in reservedTickets)
             {
                 ticket.Print();
-                balance = balance - ticket.price;
+                _balance = _balance - ticket.price;
             }
 
             Console.WriteLine($"\nНа вашем счету осталось {balance} рублей.");
@@ -299,6 +377,36 @@ namespace cinema_prototype_3
 
             for (int i = 0; i <= topNum - 1; i++)
                 Console.WriteLine($"{i + 1}. {sorted[i]}");
+        }
+
+        public static void ReadFile(string filename)
+        {
+            using (var sr = new StreamReader(filename))
+            {
+                using (var jsonReader = new JsonTextReader(sr))
+                {
+                    var serializer = new JsonSerializer()
+                    { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+                    all = serializer.Deserialize<List<User>>(jsonReader);
+                }
+            }
+
+        }
+        public static void UpdateFile(string filename)
+        {
+            using (var sw = new StreamWriter(filename))
+            {
+                using (var jsonWriter = new JsonTextWriter(sw))
+                {
+                    jsonWriter.Formatting = Formatting.Indented;
+
+                    var serializer = new JsonSerializer()
+                    { TypeNameHandling = TypeNameHandling.Auto, PreserveReferencesHandling = PreserveReferencesHandling.Objects };
+
+                    serializer.Serialize(jsonWriter, all);
+                }
+            }
         }
     }
 }

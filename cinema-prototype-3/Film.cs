@@ -13,7 +13,7 @@ namespace cinema_prototype_3
         public static List<Film> all { get { return _all; } set { _all = value; } }
         private static List<Film> _all = new List<Film>();
 
-        public string name { get { return _name; } }
+        public string name { get { return _name; } set { _name = value; } }
         public void SetName()
         {
             bool succeeded = false;
@@ -45,7 +45,7 @@ namespace cinema_prototype_3
         }
         private string _name = "";
 
-        public string ageRestriction { get { return _ageRestriction; } }
+        public string ageRestriction { get { return _ageRestriction; } set { _ageRestriction = value; } }
         public void SetAgeRestriction()
         {
             Console.WriteLine($"\nВведите возрастное ограничение для фильма {name}:");
@@ -86,46 +86,61 @@ namespace cinema_prototype_3
             }
             return canBeEdited;
         }
-        public Screening ChooseScreening()
+        public Screening ChooseScreening(string whoChooses) // user | administrator
         {
             List<Screening> relevantScreenings = screenings.FindAll(screening => screening.time > DateTime.Now);
+            if (whoChooses == "user")
+            {
+                relevantScreenings = relevantScreenings.FindAll(screening => (screening.time - DateTime.Now).Days <= screening.maxBookingPeriod);
+            }
             relevantScreenings.Sort((x, y) => x.time.CompareTo(y.time));
 
             if (relevantScreenings.Count == 0)
             {
                 Console.WriteLine("Актуальных сеансов на данный фильм нет.");
-                return new Screening();
+                return null;
             }
             TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
 
             for (int i = 0; i < relevantScreenings.Count; i++)
             {
-                Console.WriteLine($"{i + 1,3}: {relevantScreenings[i].hall.name,10} {relevantScreenings[i].hall.GetType()} | {relevantScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
+                relevantScreenings[i].Print(i);
                 scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
             }
 
             Console.WriteLine("\nВведите номер одного выбранного сеанса:");
             int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
 
-            return screenings[scrNum];
+            return relevantScreenings[scrNum];
         }
-        public static Film ChooseFilm(string after)
+        public static Tuple<Film, int> ChooseFilm(string after)
         {
             TextPrompt<string> filmChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Неверный вариант. Повторите попытку.");
-
+            int optionCount = 0;
             if (after == "screening count important") // убираем варианты, где у фильма нет сеансов
             {
                 foreach (Film film in Film.all)
                 {
                     if (film.screenings.Count != 0)
+                    {
                         filmChoicePrompt.AddChoice(film.name);
+                        optionCount++;
+                    }
                 }
             }
-
             else // "screening count not important"
             {
                 foreach (Film film in Film.all)
+                {
                     filmChoicePrompt.AddChoice(film.name);
+                    optionCount++;
+                }
+            }
+
+            if (optionCount == 0)
+            {
+                Console.WriteLine("Выбрать фильм невозможно;");
+                return Tuple.Create(new Film(), -1); // код -1 --> фильм не возвращен
             }
 
             string inputName = AnsiConsole.Prompt(filmChoicePrompt);
@@ -133,9 +148,10 @@ namespace cinema_prototype_3
             foreach (Film film in Film.all)
             {
                 if (film.name == inputName)
-                    return film;
+                    return Tuple.Create(film, 1);// код 1 --> фильм возвращен
             }
-            return new Film(); // dummyFilm
+            return Tuple.Create(new Film(), -1); // код -1 --> фильм не возвращен
+
         }
 
         public static void ReadFile(string filename)
